@@ -1,0 +1,545 @@
+{
+  "version": "1.0.0",
+  "baseUrl": "http://localhost:5000",
+  "authentication": {
+    "type": "Bearer Token",
+    "header": "Authorization",
+    "format": "Bearer {token}"
+  },
+  "endpoints": {
+    "auth": {
+      "login": {
+        "method": "POST",
+        "path": "/api/auth/login",
+        "request": {
+          "body": {
+            "email": "string",
+            "password": "string"
+          }
+        },
+        "response": {
+          "user": {
+            "id": "string",
+            "email": "string",
+            "firstName": "string",
+            "lastName": "string",
+            "role": "employee | admin | hr",
+            "department": "string (optional)",
+            "position": "string (optional)",
+            "phone": "string (optional)",
+            "avatar": "string (optional)",
+            "createdAt": "string (ISO 8601)"
+          },
+          "token": "string (JWT)"
+        }
+      },
+      "logout": {
+        "method": "POST",
+        "path": "/api/auth/logout",
+        "request": {},
+        "response": {
+          "message": "string"
+        }
+      },
+      "getCurrentUser": {
+        "method": "GET",
+        "path": "/api/auth/me",
+        "request": {},
+        "response": {
+          "id": "string",
+          "email": "string",
+          "firstName": "string",
+          "lastName": "string",
+          "role": "employee | admin | hr",
+          "department": "string (optional)",
+          "position": "string (optional)",
+          "phone": "string (optional)",
+          "avatar": "string (optional)",
+          "createdAt": "string (ISO 8601)"
+        }
+      }
+    },
+    "employees": {
+      "getAll": {
+        "method": "GET",
+        "path": "/api/employees",
+        "request": {},
+        "response": [
+          {
+            "id": "string",
+            "email": "string",
+            "firstName": "string",
+            "lastName": "string",
+            "role": "employee | admin | hr",
+            "department": "string",
+            "position": "string",
+            "phone": "string",
+            "hireDate": "string (YYYY-MM-DD)",
+            "salary": "number",
+            "status": "active | inactive"
+          }
+        ]
+      },
+      "getById": {
+        "method": "GET",
+        "path": "/api/employees/:id",
+        "request": {
+          "params": {
+            "id": "string"
+          }
+        },
+        "response": {
+          "id": "string",
+          "email": "string",
+          "firstName": "string",
+          "lastName": "string",
+          "role": "employee | admin | hr",
+          "department": "string",
+          "position": "string",
+          "phone": "string",
+          "hireDate": "string (YYYY-MM-DD)",
+          "salary": "number",
+          "status": "active | inactive"
+        }
+      },
+      "create": {
+        "method": "POST",
+        "path": "/api/employees",
+        "request": {
+          "body": {
+            "email": "string",
+            "firstName": "string",
+            "lastName": "string",
+            "department": "string",
+            "position": "string",
+            "phone": "string",
+            "salary": "number",
+            "role": "employee (default)"
+          }
+        },
+        "response": {
+          "id": "string",
+          "email": "string",
+          "firstName": "string",
+          "lastName": "string",
+          "role": "employee | admin | hr",
+          "department": "string",
+          "position": "string",
+          "phone": "string",
+          "hireDate": "string (YYYY-MM-DD)",
+          "salary": "number",
+          "status": "active | inactive"
+        }
+      },
+      "update": {
+        "method": "PUT",
+        "path": "/api/employees/:id",
+        "request": {
+          "params": {
+            "id": "string"
+          },
+          "body": {
+            "email": "string (optional)",
+            "firstName": "string (optional)",
+            "lastName": "string (optional)",
+            "department": "string (optional)",
+            "position": "string (optional)",
+            "phone": "string (optional)",
+            "salary": "number (optional)",
+            "status": "active | inactive (optional)"
+          }
+        },
+        "response": {
+          "id": "string",
+          "email": "string",
+          "firstName": "string",
+          "lastName": "string",
+          "role": "employee | admin | hr",
+          "department": "string",
+          "position": "string",
+          "phone": "string",
+          "hireDate": "string (YYYY-MM-DD)",
+          "salary": "number",
+          "status": "active | inactive"
+        }
+      },
+      "delete": {
+        "method": "DELETE",
+        "path": "/api/employees/:id",
+        "request": {
+          "params": {
+            "id": "string"
+          }
+        },
+        "response": {
+          "message": "string"
+        }
+      }
+    },
+    "attendance": {
+      "getMyAttendance": {
+        "method": "GET",
+        "path": "/api/attendance/me",
+        "request": {},
+        "response": [
+          {
+            "id": "string",
+            "userId": "string",
+            "date": "string (YYYY-MM-DD)",
+            "checkIn": "string (HH:mm) (optional)",
+            "checkOut": "string (HH:mm) (optional)",
+            "status": "present | absent | half-day | leave",
+            "totalHours": "number (optional)"
+          }
+        ]
+      },
+      "getAllAttendance": {
+        "method": "GET",
+        "path": "/api/attendance",
+        "request": {},
+        "response": [
+          {
+            "id": "string",
+            "userId": "string",
+            "date": "string (YYYY-MM-DD)",
+            "checkIn": "string (HH:mm) (optional)",
+            "checkOut": "string (HH:mm) (optional)",
+            "status": "present | absent | half-day | leave",
+            "totalHours": "number (optional)"
+          }
+        ]
+      },
+      "checkIn": {
+        "method": "POST",
+        "path": "/api/attendance/check-in",
+        "request": {},
+        "response": {
+          "id": "string",
+          "userId": "string",
+          "date": "string (YYYY-MM-DD)",
+          "checkIn": "string (HH:mm)",
+          "status": "present"
+        }
+      },
+      "checkOut": {
+        "method": "POST",
+        "path": "/api/attendance/check-out",
+        "request": {},
+        "response": {
+          "id": "string",
+          "userId": "string",
+          "date": "string (YYYY-MM-DD)",
+          "checkIn": "string (HH:mm)",
+          "checkOut": "string (HH:mm)",
+          "status": "present",
+          "totalHours": "number"
+        }
+      },
+      "getTodayAttendance": {
+        "method": "GET",
+        "path": "/api/attendance/today",
+        "request": {},
+        "response": {
+          "id": "string",
+          "userId": "string",
+          "date": "string (YYYY-MM-DD)",
+          "checkIn": "string (HH:mm) (optional)",
+          "checkOut": "string (HH:mm) (optional)",
+          "status": "present | absent | half-day | leave",
+          "totalHours": "number (optional)"
+        } | null
+      }
+    },
+    "leaves": {
+      "getMyLeaves": {
+        "method": "GET",
+        "path": "/api/leaves/me",
+        "request": {},
+        "response": [
+          {
+            "id": "string",
+            "userId": "string",
+            "employeeName": "string",
+            "type": "paid | sick | unpaid",
+            "startDate": "string (YYYY-MM-DD)",
+            "endDate": "string (YYYY-MM-DD)",
+            "days": "number",
+            "reason": "string",
+            "status": "pending | approved | rejected",
+            "appliedAt": "string (ISO 8601)",
+            "reviewedBy": "string (optional)",
+            "reviewedAt": "string (ISO 8601) (optional)",
+            "comments": "string (optional)"
+          }
+        ]
+      },
+      "getAllLeaves": {
+        "method": "GET",
+        "path": "/api/leaves",
+        "request": {},
+        "response": [
+          {
+            "id": "string",
+            "userId": "string",
+            "employeeName": "string",
+            "type": "paid | sick | unpaid",
+            "startDate": "string (YYYY-MM-DD)",
+            "endDate": "string (YYYY-MM-DD)",
+            "days": "number",
+            "reason": "string",
+            "status": "pending | approved | rejected",
+            "appliedAt": "string (ISO 8601)",
+            "reviewedBy": "string (optional)",
+            "reviewedAt": "string (ISO 8601) (optional)",
+            "comments": "string (optional)"
+          }
+        ]
+      },
+      "applyLeave": {
+        "method": "POST",
+        "path": "/api/leaves",
+        "request": {
+          "body": {
+            "type": "paid | sick | unpaid",
+            "startDate": "string (YYYY-MM-DD)",
+            "endDate": "string (YYYY-MM-DD)",
+            "reason": "string"
+          }
+        },
+        "response": {
+          "id": "string",
+          "userId": "string",
+          "employeeName": "string",
+          "type": "paid | sick | unpaid",
+          "startDate": "string (YYYY-MM-DD)",
+          "endDate": "string (YYYY-MM-DD)",
+          "days": "number",
+          "reason": "string",
+          "status": "pending",
+          "appliedAt": "string (ISO 8601)"
+        }
+      },
+      "approveLeave": {
+        "method": "POST",
+        "path": "/api/leaves/:id/approve",
+        "request": {
+          "params": {
+            "id": "string"
+          },
+          "body": {
+            "comments": "string (optional)"
+          }
+        },
+        "response": {
+          "id": "string",
+          "userId": "string",
+          "employeeName": "string",
+          "type": "paid | sick | unpaid",
+          "startDate": "string (YYYY-MM-DD)",
+          "endDate": "string (YYYY-MM-DD)",
+          "days": "number",
+          "reason": "string",
+          "status": "approved",
+          "appliedAt": "string (ISO 8601)",
+          "reviewedBy": "string",
+          "reviewedAt": "string (ISO 8601)",
+          "comments": "string (optional)"
+        }
+      },
+      "rejectLeave": {
+        "method": "POST",
+        "path": "/api/leaves/:id/reject",
+        "request": {
+          "params": {
+            "id": "string"
+          },
+          "body": {
+            "comments": "string (optional)"
+          }
+        },
+        "response": {
+          "id": "string",
+          "userId": "string",
+          "employeeName": "string",
+          "type": "paid | sick | unpaid",
+          "startDate": "string (YYYY-MM-DD)",
+          "endDate": "string (YYYY-MM-DD)",
+          "days": "number",
+          "reason": "string",
+          "status": "rejected",
+          "appliedAt": "string (ISO 8601)",
+          "reviewedBy": "string",
+          "reviewedAt": "string (ISO 8601)",
+          "comments": "string (optional)"
+        }
+      }
+    },
+    "payroll": {
+      "getMyPayroll": {
+        "method": "GET",
+        "path": "/api/payroll/me",
+        "request": {},
+        "response": [
+          {
+            "id": "string",
+            "userId": "string",
+            "employeeName": "string",
+            "month": "string",
+            "year": "number",
+            "baseSalary": "number",
+            "allowances": "number",
+            "deductions": "number",
+            "netSalary": "number",
+            "status": "pending | processed | paid"
+          }
+        ]
+      },
+      "getAllPayroll": {
+        "method": "GET",
+        "path": "/api/payroll",
+        "request": {},
+        "response": [
+          {
+            "id": "string",
+            "userId": "string",
+            "employeeName": "string",
+            "month": "string",
+            "year": "number",
+            "baseSalary": "number",
+            "allowances": "number",
+            "deductions": "number",
+            "netSalary": "number",
+            "status": "pending | processed | paid"
+          }
+        ]
+      },
+      "updateSalary": {
+        "method": "PUT",
+        "path": "/api/payroll/:userId/salary",
+        "request": {
+          "params": {
+            "userId": "string"
+          },
+          "body": {
+            "salary": "number"
+          }
+        },
+        "response": {
+          "id": "string",
+          "userId": "string",
+          "employeeName": "string",
+          "month": "string",
+          "year": "number",
+          "baseSalary": "number",
+          "allowances": "number",
+          "deductions": "number",
+          "netSalary": "number",
+          "status": "pending | processed | paid"
+        }
+      },
+      "processPayroll": {
+        "method": "POST",
+        "path": "/api/payroll/process",
+        "request": {
+          "body": {
+            "month": "string",
+            "year": "number"
+          }
+        },
+        "response": [
+          {
+            "id": "string",
+            "userId": "string",
+            "employeeName": "string",
+            "month": "string",
+            "year": "number",
+            "baseSalary": "number",
+            "allowances": "number",
+            "deductions": "number",
+            "netSalary": "number",
+            "status": "processed"
+          }
+        ]
+      }
+    },
+    "payslips": {
+      "getMyPayslips": {
+        "method": "GET",
+        "path": "/api/payslips/me",
+        "request": {},
+        "response": [
+          {
+            "id": "string",
+            "userId": "string",
+            "month": "string",
+            "year": "number",
+            "baseSalary": "number",
+            "allowances": "number",
+            "deductions": "number",
+            "netSalary": "number",
+            "pdfUrl": "string (optional)",
+            "generatedAt": "string (ISO 8601)"
+          }
+        ]
+      },
+      "getPayslipById": {
+        "method": "GET",
+        "path": "/api/payslips/:id",
+        "request": {
+          "params": {
+            "id": "string"
+          }
+        },
+        "response": {
+          "id": "string",
+          "userId": "string",
+          "month": "string",
+          "year": "number",
+          "baseSalary": "number",
+          "allowances": "number",
+          "deductions": "number",
+          "netSalary": "number",
+          "pdfUrl": "string (optional)",
+          "generatedAt": "string (ISO 8601)"
+        }
+      },
+      "downloadPayslip": {
+        "method": "GET",
+        "path": "/api/payslips/:id/download",
+        "request": {
+          "params": {
+            "id": "string"
+          }
+        },
+        "response": "Blob (PDF file)",
+        "headers": {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": "attachment; filename=payslip-{id}.pdf"
+        }
+      }
+    }
+  },
+  "errorResponses": {
+    "400": {
+      "message": "Bad Request",
+      "errors": "array of validation errors (optional)"
+    },
+    "401": {
+      "message": "Unauthorized",
+      "description": "Invalid or missing authentication token"
+    },
+    "403": {
+      "message": "Forbidden",
+      "description": "User does not have permission to access this resource"
+    },
+    "404": {
+      "message": "Not Found",
+      "description": "Resource not found"
+    },
+    "500": {
+      "message": "Internal Server Error",
+      "description": "Server error occurred"
+    }
+  }
+}
+

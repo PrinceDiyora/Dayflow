@@ -1,0 +1,198 @@
+// Dayflow HRMS Database Schema
+// PostgreSQL with Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// AUTHENTICATION & USERS
+// ============================================================================
+
+enum UserRole {
+  employee
+  admin
+  hr
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+model User {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  loginId     String?   @unique // Auto-generated Login ID
+  password    String    // Hashed with bcrypt
+  firstName   String
+  lastName    String
+  role        UserRole  @default(employee)
+  department  String?
+  position    String?
+  phone       String?
+  avatar       String?
+  status      UserStatus @default(active)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  attendance  Attendance[]
+  leaves      Leave[]
+  payroll     Payroll[]
+  payslips    Payslip[]
+  employee    Employee?
+
+  @@map("users")
+}
+
+model Employee {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  hireDate    DateTime  @default(now())
+  salary      Decimal   @db.Decimal(10, 2)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("employees")
+}
+
+// ============================================================================
+// ATTENDANCE
+// ============================================================================
+
+enum AttendanceStatus {
+  present
+  absent
+  halfDay
+  leave
+}
+
+model Attendance {
+  id          String           @id @default(uuid())
+  userId      String
+  date        DateTime         @db.Date
+  checkIn     String?          // HH:mm format
+  checkOut    String?          // HH:mm format
+  status      AttendanceStatus @default(present)
+  totalHours  Decimal?         @db.Decimal(4, 2)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("attendance")
+}
+
+// ============================================================================
+// LEAVES
+// ============================================================================
+
+enum LeaveType {
+  paid
+  sick
+  unpaid
+}
+
+enum LeaveStatus {
+  pending
+  approved
+  rejected
+}
+
+model Leave {
+  id          String      @id @default(uuid())
+  userId      String
+  type        LeaveType
+  startDate   DateTime    @db.Date
+  endDate     DateTime    @db.Date
+  days        Int
+  reason      String
+  status      LeaveStatus @default(pending)
+  appliedAt   DateTime    @default(now())
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  comments    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("leaves")
+}
+
+// ============================================================================
+// PAYROLL
+// ============================================================================
+
+enum PayrollStatus {
+  pending
+  processed
+  paid
+}
+
+model Payroll {
+  id          String        @id @default(uuid())
+  userId      String
+  month       String        // e.g., "January", "February"
+  year        Int
+  baseSalary  Decimal       @db.Decimal(10, 2)
+  allowances  Decimal       @db.Decimal(10, 2) @default(0)
+  deductions  Decimal       @db.Decimal(10, 2) @default(0)
+  netSalary   Decimal       @db.Decimal(10, 2)
+  status      PayrollStatus @default(pending)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month, year], name: "userId_month_year")
+  @@index([userId])
+  @@index([month, year])
+  @@map("payroll")
+}
+
+// ============================================================================
+// PAYSLIPS
+// ============================================================================
+
+model Payslip {
+  id          String   @id @default(uuid())
+  userId      String
+  month       String
+  year        Int
+  baseSalary  Decimal  @db.Decimal(10, 2)
+  allowances  Decimal  @db.Decimal(10, 2) @default(0)
+  deductions  Decimal  @db.Decimal(10, 2) @default(0)
+  netSalary   Decimal  @db.Decimal(10, 2)
+  pdfUrl      String?
+  generatedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month, year], name: "userId_month_year")
+  @@index([userId])
+  @@index([month, year])
+  @@map("payslips")
+}
+
