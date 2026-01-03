@@ -12,6 +12,7 @@ import { useAuthStore } from '@/store/authStore'
 import { authAPI } from '@/mocks/api'
 
 const loginSchema = z.object({
+  role: z.enum(['employee', 'admin']),
   loginId: z.string().min(1, 'Login ID or Email is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
@@ -20,24 +21,29 @@ export function Login() {
   const navigate = useNavigate()
   const { login } = useAuthStore()
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
+      role: 'employee',
       loginId: '',
       password: '',
     },
   })
 
+  const selectedRole = watch('role')
+
   const onSubmit = async (data) => {
     setIsLoading(true)
     try {
       // Try to login with loginId (could be email or login ID)
-      const response = await authAPI.login(data.loginId, data.password, 'employee')
+      const response = await authAPI.login(data.loginId, data.password, data.role)
       login(response.data.user, response.data.token)
       toast.success('Login successful!')
       navigate('/dashboard')
@@ -72,13 +78,25 @@ export function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password :-</Label>
-              <Input
-                id="password"
-                type="password"
-                {...register('password')}
-                className={errors.password ? 'border-destructive' : ''}
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <a href="#" className="text-xs text-purple-600 hover:underline">Forgot password?</a>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  {...register('password')}
+                  className={errors.password ? 'border-destructive pr-10' : 'pr-10'}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-sm text-destructive">{errors.password.message}</p>
               )}
