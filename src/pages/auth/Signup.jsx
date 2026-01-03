@@ -4,13 +4,15 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import axios from 'axios'
 import { Eye, EyeOff, Upload } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuthStore } from '@/store/authStore'
-import { authAPI } from '@/mocks/api'
+
+const API_URL = 'http://localhost:5000/api'
 
 const signupSchema = z.object({
   employeeId: z.string()
@@ -26,7 +28,6 @@ const signupSchema = z.object({
     .regex(/[0-9]/, 'Password must contain at least one number')
     .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
   confirmPassword: z.string().min(8, 'Confirm Password is required'),
-  role: z.enum(['employee', 'hr', 'admin']),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -53,7 +54,6 @@ export function Signup() {
       phone: '',
       password: '',
       confirmPassword: '',
-      role: 'employee',
     },
   })
 
@@ -68,15 +68,24 @@ export function Signup() {
   const onSubmit = async (data) => {
     setIsLoading(true)
     try {
-      const response = await authAPI.signup(data.employeeId, data.email, data.password, data.role, {
+      const response = await axios.post(`${API_URL}/auth/signup`, {
+        employeeId: data.employeeId,
+        email: data.email,
+        password: data.password,
         name: data.name,
         phone: data.phone,
+      }, {
+        withCredentials: true,
       })
-      login(response.data.user, response.data.token)
-      toast.success('Account created successfully! Email verification sent.')
-      navigate('/dashboard')
+      
+      if (response.data.success) {
+        login(response.data.data.user, response.data.data.token)
+        toast.success('Account created successfully!')
+        navigate('/profile')
+      }
     } catch (error) {
-      toast.error(error.message || 'Failed to create account')
+      const errorMessage = error.response?.data?.message || 'Failed to create account'
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -146,22 +155,6 @@ export function Signup() {
               />
               {errors.phone && (
                 <p className="text-sm text-destructive">{errors.phone.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <select
-                id="role"
-                {...register('role')}
-                className="w-full border border-input bg-background px-3 py-2 rounded-md"
-              >
-                <option value="employee">Employee</option>
-                <option value="hr">HR Officer</option>
-                <option value="admin">Admin</option>
-              </select>
-              {errors.role && (
-                <p className="text-sm text-destructive">{errors.role.message}</p>
               )}
             </div>
 

@@ -4,16 +4,18 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import axios from 'axios'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuthStore } from '@/store/authStore'
-import { authAPI } from '@/mocks/api'
+
+const API_URL = 'http://localhost:5000/api'
 
 const loginSchema = z.object({
-  loginId: z.string().min(1, 'Login ID or Email is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  identifier: z.string().min(1, 'Email or Employee ID is required'),
+  password: z.string().min(1, 'Password is required'),
 })
 
 export function Login() {
@@ -28,7 +30,7 @@ export function Login() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      loginId: '',
+      identifier: '',
       password: '',
     },
   })
@@ -36,13 +38,36 @@ export function Login() {
   const onSubmit = async (data) => {
     setIsLoading(true)
     try {
-      // Try to login with loginId (could be email or login ID)
-      const response = await authAPI.login(data.loginId, data.password, 'employee')
-      login(response.data.user, response.data.token)
-      toast.success('Login successful!')
-      navigate('/dashboard')
+      // Check if admin login
+      if (data.identifier.toLowerCase() === 'admin' && data.password === 'admin') {
+        const adminUser = {
+          _id: 'admin',
+          employeeId: 'admin',
+          name: 'Admin',
+          email: 'admin@company.com',
+          role: 'admin',
+        }
+        login(adminUser, 'admin-token')
+        toast.success('Admin login successful!')
+        navigate('/profile')
+      } else {
+        // Regular employee login
+        const response = await axios.post(`${API_URL}/auth/login`, {
+          email: data.identifier,
+          password: data.password,
+        }, {
+          withCredentials: true,
+        })
+        
+        if (response.data.success) {
+          login(response.data.data.user, response.data.data.token)
+          toast.success('Login successful!')
+          navigate('/profile')
+        }
+      }
     } catch (error) {
-      toast.error(error.message || 'Invalid credentials')
+      const errorMessage = error.response?.data?.message || 'Invalid credentials'
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -59,15 +84,16 @@ export function Login() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="loginId">Login Id/Email :-</Label>
+              <Label htmlFor="identifier">Email or ID :-</Label>
               <Input
-                id="loginId"
+                id="identifier"
                 type="text"
-                {...register('loginId')}
-                className={errors.loginId ? 'border-destructive' : ''}
+                placeholder="Enter email or 'admin' for admin login"
+                {...register('identifier')}
+                className={errors.identifier ? 'border-destructive' : ''}
               />
-              {errors.loginId && (
-                <p className="text-sm text-destructive">{errors.loginId.message}</p>
+              {errors.identifier && (
+                <p className="text-sm text-destructive">{errors.identifier.message}</p>
               )}
             </div>
 
