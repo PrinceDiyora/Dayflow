@@ -118,3 +118,20 @@ All API calls are currently mocked. To integrate with a real backend:
 
 MIT
 
+The built files will be in the `dist` directory.
+
+## TODO: Backend Integration
+
+All API calls are currently mocked. To integrate with a real backend:
+
+1. Update `src/mocks/api.js` to use actual API endpoints
+2. Replace mock data with real API calls
+3. Update authentication flow to use real tokens
+4. Add proper error handling and loading states
+
+## License
+
+MIT
+
+
+
