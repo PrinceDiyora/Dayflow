@@ -10,13 +10,15 @@ import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
 export const employeesRoutes = Router();
 
-// All employee routes require admin/hr role
+// All routes require authentication
 employeesRoutes.use(authenticate);
-employeesRoutes.use(authorize('admin', 'hr'));
 
+// View routes - available to all authenticated users
 employeesRoutes.get('/', getAllEmployees);
 employeesRoutes.get('/:id', getEmployeeById);
-employeesRoutes.post('/', createEmployee);
-employeesRoutes.put('/:id', updateEmployee);
-employeesRoutes.delete('/:id', deleteEmployee);
+
+// Create/Update/Delete routes - admin/hr only
+employeesRoutes.post('/', authorize('admin', 'hr'), createEmployee);
+employeesRoutes.put('/:id', authorize('admin', 'hr'), updateEmployee);
+employeesRoutes.delete('/:id', authorize('admin', 'hr'), deleteEmployee);
 

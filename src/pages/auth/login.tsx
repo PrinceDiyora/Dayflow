@@ -41,11 +41,7 @@ export function LoginPage() {
         password: data.password,
       });
       const user = authStore.getState().user;
-      if (user?.role === 'admin' || user?.role === 'hr') {
-        navigate('/dashboard/admin');
-      } else {
-        navigate('/dashboard/employee');
-      }
+      navigate('/employees');
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',

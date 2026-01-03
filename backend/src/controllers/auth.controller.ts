@@ -96,3 +96,53 @@ export async function getCurrentUser(
   }
 }
 
+export async function changePassword(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    if (!req.userId) {
+      throw createError('Unauthorized', 401);
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      throw createError('Current password and new password are required', 400);
+    }
+
+    if (newPassword.length < 6) {
+      throw createError('New password must be at least 6 characters', 400);
+    }
+
+    // Get user with password
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+    });
+
+    if (!user) {
+      throw createError('User not found', 404);
+    }
+
+    // Verify current password
+    const isPasswordValid = await comparePassword(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw createError('Current password is incorrect', 401);
+    }
+
+    // Hash new password
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { password: hashedNewPassword },
+    });
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+

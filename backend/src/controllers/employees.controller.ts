@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../utils/prisma.js';
-import { hashPassword, generateRandomPassword } from '../utils/password.js';
+import { hashPassword } from '../utils/password.js';
 import { createError } from '../middleware/errorHandler.js';
 import { generateLoginId } from '../utils/loginIdGenerator.js';
 
@@ -89,9 +89,9 @@ export async function createEmployee(
       throw createError('Email already exists', 400);
     }
 
-    // Generate auto password and Login ID
-    const autoPassword = generateRandomPassword();
-    const hashedPassword = await hashPassword(autoPassword);
+    // Set default password to "password"
+    const defaultPassword = 'password';
+    const hashedPassword = await hashPassword(defaultPassword);
     const loginId = await generateLoginId(firstName, lastName, department);
 
     // Create user and employee in transaction
@@ -127,8 +127,7 @@ export async function createEmployee(
       ...userWithoutPassword,
       employee: result.employee,
       loginId, // Return generated Login ID
-      autoPassword, // Return auto-generated password (only on creation)
-      message: 'Employee created successfully. Login ID and password have been auto-generated.',
+      message: 'Employee created successfully. Default password is "password". User can login with email and change password from profile.',
     });
   } catch (error) {
     next(error);

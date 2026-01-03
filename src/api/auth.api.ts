@@ -25,5 +25,13 @@ export const authApi = {
     const response = await apiClient.get('/api/auth/me');
     return response.data;
   },
+  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<void> => {
+    if (USE_MOCK) {
+      // Mock implementation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return;
+    }
+    await apiClient.post('/api/auth/change-password', data);
+  },
 };
 

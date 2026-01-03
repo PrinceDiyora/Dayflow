@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, LogOut, User as UserIcon, Users, Clock, Calendar } from 'lucide-react';
+import { Bell, LogOut, User as UserIcon, Users, Clock, Calendar, Circle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,11 +13,90 @@ import { authStore } from '@/store/auth.store';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
+import { attendanceApi } from '@/api/attendance.api';
+import { Attendance } from '@/types';
+import { toast } from '@/hooks/use-toast';
 
 export function Topbar() {
   const { user, logout } = authStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTodayAttendance();
+  }, []);
+
+  const fetchTodayAttendance = async () => {
+    try {
+      setIsLoading(true);
+      const data = await attendanceApi.getTodayAttendance();
+      setTodayAttendance(data);
+    } catch (error) {
+      console.error('Failed to fetch today attendance:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCheckIn = async () => {
+    setIsChecking(true);
+    try {
+      await attendanceApi.checkIn();
+      toast({
+        title: 'Checked in',
+        description: 'You have successfully checked in.',
+      });
+      await fetchTodayAttendance();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to check in',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const handleCheckOut = async () => {
+    setIsChecking(true);
+    try {
+      await attendanceApi.checkOut();
+      toast({
+        title: 'Checked out',
+        description: 'You have successfully checked out.',
+      });
+      await fetchTodayAttendance();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to check out',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const getStatusColor = () => {
+    if (!todayAttendance || !todayAttendance.checkIn) return 'bg-red-500';
+    if (todayAttendance.checkIn && !todayAttendance.checkOut) return 'bg-green-500';
+    return 'bg-green-500';
+  };
+
+  const formatTime = (time?: string) => {
+    if (!time) return '';
+    // Convert 24-hour format to 12-hour format
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes}${ampm}`;
+  };
 
   const handleLogout = () => {
     logout();
@@ -46,8 +125,8 @@ export function Topbar() {
       <div className="flex h-16 items-center justify-between px-4 lg:px-6">
         {/* Logo */}
         <div className="flex items-center gap-4">
-          <Link to={user?.role === 'admin' || user?.role === 'hr' ? '/dashboard/admin' : '/dashboard/employee'}>
-            <h1 className="text-xl font-bold text-primary">Dayflow HRMS</h1>
+          <Link to="/employees">
+            <h1 className="text-xl font-bold text-primary">Company Logo</h1>
           </Link>
         </div>
 
@@ -78,25 +157,72 @@ export function Topbar() {
 
         {/* Right side actions */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
-          </Button>
-          
+          {/* Check-in/Check-out Section */}
+          <div className="flex items-center gap-3 border-r pr-4">
+            {!isLoading && (
+              <>
+                {!todayAttendance?.checkIn ? (
+                  <Button
+                    size="sm"
+                    onClick={handleCheckIn}
+                    disabled={isChecking}
+                    className="h-8 text-xs"
+                  >
+                    {isChecking ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                    ) : null}
+                    Check IN →
+                  </Button>
+                ) : !todayAttendance?.checkOut ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground">
+                      Since {formatTime(todayAttendance.checkIn)}
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={handleCheckOut}
+                      disabled={isChecking}
+                      className="h-8 text-xs"
+                    >
+                      {isChecking ? (
+                        <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                      ) : null}
+                      Check Out →
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground">
+                      Completed
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatTime(todayAttendance.checkIn)} - {formatTime(todayAttendance.checkOut)}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+            
+            {/* Status Indicator */}
+            {!isLoading && (
+              <Circle className={cn("h-3 w-3 fill-current", getStatusColor())} />
+            )}
+          </div>
+
+          {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <UserIcon className="h-4 w-4 text-primary" />
+              <Button variant="ghost" className="h-10 w-10 rounded-full p-0 relative">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary">
+                  <UserIcon className="h-5 w-5 text-primary" />
                 </div>
-                <div className="hidden md:flex flex-col items-start">
-                  <span className="text-sm font-medium">
-                    {user?.firstName} {user?.lastName}
-                  </span>
-                  <Badge variant={getRoleBadgeVariant(user?.role)} className="text-xs">
-                    {user?.role}
-                  </Badge>
-                </div>
+                {/* Status dot on avatar */}
+                {!isLoading && (
+                  <Circle className={cn(
+                    "absolute bottom-0 right-0 h-3 w-3 fill-current border-2 border-background rounded-full",
+                    getStatusColor()
+                  )} />
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -104,12 +230,12 @@ export function Topbar() {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <UserIcon className="mr-2 h-4 w-4" />
-                Profile
+                My Profile
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
-                Logout
+                Log Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

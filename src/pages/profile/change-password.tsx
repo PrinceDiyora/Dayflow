@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authStore } from '@/store/auth.store';
+import { authApi } from '@/api/auth.api';
 
 const changePasswordSchema = z
   .object({
@@ -43,9 +44,10 @@ export function ChangePasswordPage() {
   const onSubmit = async (data: ChangePasswordForm) => {
     setIsLoading(true);
     try {
-      // TODO: Implement API call to change password
-      // For now, simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await authApi.changePassword({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
 
       toast({
         title: 'Password Changed',

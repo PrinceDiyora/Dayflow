@@ -7,6 +7,7 @@ import { AdminDashboard } from '@/pages/dashboard/admin-dashboard';
 import { ProfilePage } from '@/pages/profile/profile';
 import { ChangePasswordPage } from '@/pages/profile/change-password';
 import { EmployeesPage } from '@/pages/employees/employees';
+import { EmployeeDetailPage } from '@/pages/employees/employee-detail';
 import { AttendancePage } from '@/pages/attendance/attendance';
 import { LeavesPage } from '@/pages/leaves/leaves';
 import { PayrollPage } from '@/pages/payroll/payroll';
@@ -35,7 +36,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/dashboard/employee" replace />,
+        element: <Navigate to="/employees" replace />,
       },
       {
         path: 'dashboard/employee',
@@ -63,11 +64,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'employees',
-        element: (
-          <ProtectedRoute allowedRoles={['admin', 'hr']}>
-            <EmployeesPage />
-          </ProtectedRoute>
-        ),
+        element: <EmployeesPage />,
+      },
+      {
+        path: 'employees/:id',
+        element: <EmployeeDetailPage />,
       },
       {
         path: 'attendance',

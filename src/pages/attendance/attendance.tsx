@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -9,36 +10,96 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { attendanceApi } from '@/api/attendance.api';
+import { leavesApi } from '@/api/leaves.api';
 import { authStore } from '@/store/auth.store';
 import { Attendance } from '@/types';
+import { Leave } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { Clock, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { TableSkeleton } from '@/components/common/loading-skeleton';
 import dayjs from 'dayjs';
 
-// Helper function to safely format hours
-const formatHours = (hours: number | string | null | undefined): string => {
-  if (hours == null) return '-';
-  const numHours = typeof hours === 'string' ? parseFloat(hours) : hours;
-  if (isNaN(numHours)) return '-';
-  return numHours.toFixed(2);
+// Extended Attendance type with user info
+interface AttendanceWithUser extends Attendance {
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+// Helper to format time in HH:mm format
+const formatTime = (time?: string): string => {
+  if (!time) return '-';
+  return time;
+};
+
+// Calculate work hours (assuming 8 hours standard)
+const calculateWorkHours = (checkIn?: string, checkOut?: string): string => {
+  if (!checkIn || !checkOut) return '-';
+  const [inHour, inMin] = checkIn.split(':').map(Number);
+  const [outHour, outMin] = checkOut.split(':').map(Number);
+  const inMinutes = inHour * 60 + inMin;
+  const outMinutes = outHour * 60 + outMin;
+  const totalMinutes = outMinutes - inMinutes;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
+// Calculate extra hours (hours beyond 8 hours)
+const calculateExtraHours = (checkIn?: string, checkOut?: string): string => {
+  if (!checkIn || !checkOut) return '-';
+  const [inHour, inMin] = checkIn.split(':').map(Number);
+  const [outHour, outMin] = checkOut.split(':').map(Number);
+  const inMinutes = inHour * 60 + inMin;
+  const outMinutes = outHour * 60 + outMin;
+  const totalMinutes = outMinutes - inMinutes;
+  const standardMinutes = 8 * 60; // 8 hours in minutes
+  const extraMinutes = totalMinutes - standardMinutes;
+  
+  if (extraMinutes <= 0) return '00:00';
+  
+  const hours = Math.floor(extraMinutes / 60);
+  const minutes = extraMinutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
 export function AttendancePage() {
   const { user } = authStore();
   const isAdmin = user?.role === 'admin' || user?.role === 'hr';
-  const [attendance, setAttendance] = useState<Attendance[]>([]);
-  const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null);
+  
+  // State for Admin/HR
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // State for Employees
+  const [selectedMonth, setSelectedMonth] = useState(dayjs());
+  
+  const [attendance, setAttendance] = useState<AttendanceWithUser[]>([]);
+  const [filteredAttendance, setFilteredAttendance] = useState<AttendanceWithUser[]>([]);
+  const [leaves, setLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isChecking, setIsChecking] = useState(false);
 
   useEffect(() => {
     fetchAttendance();
     if (!isAdmin) {
-      fetchTodayAttendance();
+      fetchLeaves();
     }
-  }, []);
+  }, [isAdmin, selectedDate, selectedMonth]);
+
+  useEffect(() => {
+    filterAttendance();
+  }, [attendance, searchQuery, selectedDate, selectedMonth, isAdmin]);
 
   const fetchAttendance = async () => {
     try {
@@ -46,7 +107,9 @@ export function AttendancePage() {
       const data = isAdmin
         ? await attendanceApi.getAllAttendance()
         : await attendanceApi.getMyAttendance();
-      setAttendance(data);
+      
+      // Type assertion for user info
+      setAttendance(data as AttendanceWithUser[]);
     } catch (error) {
       toast({
         title: 'Error',
@@ -58,70 +121,116 @@ export function AttendancePage() {
     }
   };
 
-  const fetchTodayAttendance = async () => {
+  const fetchLeaves = async () => {
     try {
-      const data = await attendanceApi.getTodayAttendance();
-      setTodayAttendance(data);
+      const data = await leavesApi.getMyLeaves();
+      setLeaves(data);
     } catch (error) {
-      console.error('Failed to fetch today attendance:', error);
+      console.error('Failed to fetch leaves:', error);
     }
   };
 
-  const handleCheckIn = async () => {
-    setIsChecking(true);
-    try {
-      await attendanceApi.checkIn();
-      toast({
-        title: 'Checked in',
-        description: 'You have successfully checked in.',
+  const filterAttendance = () => {
+    let filtered = [...attendance];
+
+    if (isAdmin) {
+      // Filter by selected date
+      const dateStr = selectedDate.format('YYYY-MM-DD');
+      filtered = filtered.filter((record) => record.date === dateStr);
+      
+      // Filter by search query (employee name)
+      if (searchQuery) {
+        filtered = filtered.filter((record) => {
+          const userName = record.user
+            ? `${record.user.firstName} ${record.user.lastName}`.toLowerCase()
+            : '';
+          return userName.includes(searchQuery.toLowerCase());
+        });
+      }
+    } else {
+      // Filter by selected month
+      filtered = filtered.filter((record) => {
+        const recordDate = dayjs(record.date);
+        return (
+          recordDate.month() === selectedMonth.month() &&
+          recordDate.year() === selectedMonth.year()
+        );
       });
-      fetchTodayAttendance();
-      fetchAttendance();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to check in',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsChecking(false);
+    }
+
+    setFilteredAttendance(filtered);
+  };
+
+  const handleDateChange = (direction: 'prev' | 'next') => {
+    if (isAdmin) {
+      setSelectedDate((prev) => prev.add(direction === 'next' ? 1 : -1, 'day'));
+    } else {
+      setSelectedMonth((prev) => prev.add(direction === 'next' ? 1 : -1, 'month'));
     }
   };
 
-  const handleCheckOut = async () => {
-    setIsChecking(true);
-    try {
-      await attendanceApi.checkOut();
-      toast({
-        title: 'Checked out',
-        description: 'You have successfully checked out.',
-      });
-      fetchTodayAttendance();
-      fetchAttendance();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to check out',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsChecking(false);
-    }
+  const handleDateSelect = (dateStr: string) => {
+    setSelectedDate(dayjs(dateStr));
   };
 
-  const getStatusIcon = (status: Attendance['status']) => {
-    switch (status) {
-      case 'present':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'absent':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'half-day':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'leave':
-        return <Clock className="h-4 w-4 text-blue-500" />;
-      default:
-        return null;
+  const handleMonthSelect = (month: string) => {
+    const [year, monthNum] = month.split('-');
+    setSelectedMonth(dayjs(`${year}-${monthNum}-01`));
+  };
+
+  // Calculate summary for employees
+  const getSummary = () => {
+    if (isAdmin) return null;
+
+    const presentDays = filteredAttendance.filter(
+      (record) => record.status === 'present' && record.checkIn
+    ).length;
+
+    const approvedLeaves = leaves.filter(
+      (leave) =>
+        leave.status === 'approved' &&
+        dayjs(leave.startDate).month() === selectedMonth.month() &&
+        dayjs(leave.startDate).year() === selectedMonth.year()
+    );
+    const leaveCount = approvedLeaves.reduce((sum, leave) => sum + leave.days, 0);
+
+    // Calculate total working days in the month
+    const daysInMonth = selectedMonth.daysInMonth();
+    const totalWorkingDays = daysInMonth; // Simplified - could exclude weekends
+
+    return {
+      presentDays,
+      leaveCount,
+      totalWorkingDays,
+    };
+  };
+
+  const summary = getSummary();
+
+  // Generate date options for dropdown (last 30 days)
+  const getDateOptions = () => {
+    const options = [];
+    for (let i = 0; i < 30; i++) {
+      const date = dayjs().subtract(i, 'day');
+      options.push({
+        value: date.format('YYYY-MM-DD'),
+        label: date.format('DD, MMMM YYYY'),
+      });
     }
+    return options;
+  };
+
+  // Generate month options
+  const getMonthOptions = () => {
+    const options = [];
+    for (let i = 0; i < 12; i++) {
+      const month = dayjs().subtract(i, 'month');
+      options.push({
+        value: month.format('YYYY-MM'),
+        label: month.format('MMMM YYYY'),
+      });
+    }
+    return options;
   };
 
   if (loading) {
@@ -130,103 +239,164 @@ export function AttendancePage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Attendance</h1>
-        <p className="text-muted-foreground">
-          {isAdmin ? 'View all employee attendance' : 'Track your daily attendance'}
-        </p>
+        {isAdmin && (
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Searchbar"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        )}
       </div>
 
-      {!isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Today's Attendance</CardTitle>
-            <CardDescription>Check in and check out for today</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                {todayAttendance?.checkIn ? (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Checked in at</p>
-                    <p className="text-2xl font-bold">{todayAttendance.checkIn}</p>
-                    {todayAttendance.checkOut && (
-                      <>
-                        <p className="text-sm text-muted-foreground mt-4">Checked out at</p>
-                        <p className="text-2xl font-bold">{todayAttendance.checkOut}</p>
-                        <p className="text-sm text-muted-foreground mt-4">Total hours</p>
-                        <p className="text-xl font-semibold">
-                          {formatHours(todayAttendance.totalHours)} hours
-                        </p>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No check-in recorded for today</p>
-                )}
-              </div>
-              <div className="flex gap-2">
-                {!todayAttendance?.checkIn ? (
-                  <Button onClick={handleCheckIn} disabled={isChecking}>
-                    <Clock className="mr-2 h-4 w-4" />
-                    Check In
-                  </Button>
-                ) : !todayAttendance?.checkOut ? (
-                  <Button onClick={handleCheckOut} disabled={isChecking}>
-                    <Clock className="mr-2 h-4 w-4" />
-                    Check Out
-                  </Button>
-                ) : (
-                  <Button disabled>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Completed
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Date/Month Navigation */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => handleDateChange('prev')}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => handleDateChange('next')}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+
+        {isAdmin ? (
+          <>
+            <Select
+              value={selectedDate.format('YYYY-MM-DD')}
+              onValueChange={handleDateSelect}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select date" />
+              </SelectTrigger>
+              <SelectContent>
+                {getDateOptions().map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline">Day</Button>
+          </>
+        ) : (
+          <Select
+            value={selectedMonth.format('YYYY-MM')}
+            onValueChange={handleMonthSelect}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select month" />
+            </SelectTrigger>
+            <SelectContent>
+              {getMonthOptions().map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
+      {/* Current Date Display */}
+      <div className="text-muted-foreground">
+        {isAdmin
+          ? selectedDate.format('DD, MMMM YYYY')
+          : selectedMonth.format('DD, MMMM YYYY')}
+      </div>
+
+      {/* Summary Boxes for Employees */}
+      {!isAdmin && summary && (
+        <div className="grid grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground">Count of days present</div>
+              <div className="text-2xl font-bold">{summary.presentDays}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground">Leaves count</div>
+              <div className="text-2xl font-bold">{summary.leaveCount}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground">Total working days</div>
+              <div className="text-2xl font-bold">{summary.totalWorkingDays}</div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
+      {/* Attendance Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Attendance History</CardTitle>
-          <CardDescription>
-            {isAdmin ? 'All employee attendance records' : 'Your attendance records'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                {isAdmin && <TableHead>Employee</TableHead>}
-                <TableHead>Date</TableHead>
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
-                <TableHead>Hours</TableHead>
-                <TableHead>Status</TableHead>
+                {isAdmin ? (
+                  <>
+                    <TableHead>Emp</TableHead>
+                    <TableHead>Check In</TableHead>
+                    <TableHead>Check Out</TableHead>
+                    <TableHead>Work Hours</TableHead>
+                    <TableHead>Extra hours</TableHead>
+                  </>
+                ) : (
+                  <>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Check In</TableHead>
+                    <TableHead>Check Out</TableHead>
+                    <TableHead>Work Hours</TableHead>
+                    <TableHead>Extra hours</TableHead>
+                  </>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {attendance.length === 0 ? (
+              {filteredAttendance.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 6 : 5} className="text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={isAdmin ? 5 : 5}
+                    className="text-center text-muted-foreground"
+                  >
                     No attendance records found
                   </TableCell>
                 </TableRow>
               ) : (
-                attendance.map((record) => (
+                filteredAttendance.map((record) => (
                   <TableRow key={record.id}>
-                    {isAdmin && <TableCell>{record.userId}</TableCell>}
-                    <TableCell>{dayjs(record.date).format('MMM DD, YYYY')}</TableCell>
-                    <TableCell>{record.checkIn || '-'}</TableCell>
-                    <TableCell>{record.checkOut || '-'}</TableCell>
-                    <TableCell>{formatHours(record.totalHours)}</TableCell>
+                    {isAdmin ? (
+                      <TableCell>
+                        {record.user
+                          ? `${record.user.firstName} ${record.user.lastName}`
+                          : record.userId}
+                      </TableCell>
+                    ) : (
+                      <TableCell>
+                        {dayjs(record.date).format('DD/MM/YYYY')}
+                      </TableCell>
+                    )}
+                    <TableCell>{formatTime(record.checkIn)}</TableCell>
+                    <TableCell>{formatTime(record.checkOut)}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(record.status)}
-                        <span className="capitalize">{record.status}</span>
-                      </div>
+                      {calculateWorkHours(record.checkIn, record.checkOut)}
+                    </TableCell>
+                    <TableCell>
+                      {calculateExtraHours(record.checkIn, record.checkOut)}
                     </TableCell>
                   </TableRow>
                 ))
@@ -238,4 +408,3 @@ export function AttendancePage() {
     </div>
   );
 }
-
