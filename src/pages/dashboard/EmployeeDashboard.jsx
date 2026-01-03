@@ -221,56 +221,7 @@ export function EmployeeDashboard() {
               onClick={() => navigate('/attendance')}
               className={`px-4 py-2 text-sm font-medium border border-black transition-colors ${
                 activeTab === 'attendance' || location.pathname === '/attendance'
-                  ? 'bg-blue-200 text-black'
-                  : 'text-black bg-white hover:bg-gray-50'
-              }`}
-            >
-              Attendance
-            </button>
-            <button
-              onClick={() => navigate('/leaves')}
-              className={`px-4 py-2 text-sm font-medium border border-black transition-colors ${
-                activeTab === 'timeoff' || location.pathname === '/leaves'
-                  ? 'bg-blue-200 text-black'
-                  : 'text-black bg-white hover:bg-gray-50'
-              }`}
-            >
-              Time Off
-            </button>
-          </div>
-        </div>
-
-        {/* Right Side: Search and Avatar */}
-        <div className="flex items-center gap-4">
-          {/* Search Bar - black outline, gray placeholder */}
-          <Input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-48 border border-black placeholder:text-gray-500"
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="relative flex items-center gap-2">
-                {/* Red circle indicator */}
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                {/* Light blue square avatar */}
-                <div className="w-8 h-8 bg-blue-200 border border-black"></div>
-                {/* Dropdown indicator - light blue triangles pointing right */}
-                <div className="flex items-center gap-0.5 ml-1">
-                  <div className="w-0 h-0 border-l-[3px] border-l-blue-300 border-t-[2px] border-t-transparent border-b-[2px] border-b-transparent"></div>
-                  <div className="w-0 h-0 border-l-[3px] border-l-blue-300 border-t-[2px] border-t-transparent border-b-[2px] border-b-transparent"></div>
-                </div>
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => navigate('/profile')}>
-                <User className="mr-2 h-4 w-4" />
-                My Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
+      
                 Log Out
               </DropdownMenuItem>
             </DropdownMenuContent>
