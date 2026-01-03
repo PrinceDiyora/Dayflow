@@ -280,7 +280,124 @@ export function EmployeeDashboard() {
 
       {/* Main Content */}
       <div className="pt-16 p-6">
-        <div className="mb-6">
+        
+        {/* Personal Dashboard Section */}
+        <div className="mb-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.name}</h1>
+            <p className="text-gray-500">Here's what's happening today.</p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3 mb-8">
+            {/* Attendance Card */}
+            <Card className="border-black shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-lg">Today's Attendance</h3>
+                  <div className={`p-2 rounded-full ${
+                    todayAttendance?.status === 'present' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <Clock className="w-5 h-5" />
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Check In</span>
+                    <span className="font-medium">{formatTime(todayAttendance?.checkIn) || '--:--'}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Check Out</span>
+                    <span className="font-medium">{formatTime(todayAttendance?.checkOut) || '--:--'}</span>
+                  </div>
+                  
+                  <div className="pt-2">
+                    {!todayAttendance?.checkIn ? (
+                      <Button 
+                        onClick={handleCheckIn} 
+                        disabled={isLoading}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {isLoading ? 'Loading...' : 'Check In'}
+                      </Button>
+                    ) : !todayAttendance?.checkOut ? (
+                      <Button 
+                        onClick={handleCheckOut} 
+                        disabled={isLoading}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        {isLoading ? 'Loading...' : 'Check Out'}
+                      </Button>
+                    ) : (
+                      <div className="text-center text-sm font-medium text-green-600 bg-green-50 py-2 rounded">
+                        Completed for today
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Leave Balance Card */}
+            <Card className="border-black shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-lg">Leave Balance</h3>
+                  <div className="p-2 rounded-full bg-blue-100 text-blue-600">
+                    <Briefcase className="w-5 h-5" />
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="text-2xl font-bold text-gray-900">{currentUser?.leaveBalance?.remaining || 0}</div>
+                      <div className="text-xs text-gray-500 uppercase font-medium">Remaining</div>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="text-2xl font-bold text-gray-900">{currentUser?.leaveBalance?.used || 0}</div>
+                      <div className="text-xs text-gray-500 uppercase font-medium">Used</div>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full border-black hover:bg-gray-50" onClick={() => navigate('/leaves')}>
+                    Apply Leave
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Stats / Team Card */}
+            <Card className="border-black shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-lg">My Team</h3>
+                  <div className="p-2 rounded-full bg-purple-100 text-purple-600">
+                    <User className="w-5 h-5" />
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Department</span>
+                    <span className="font-medium">{currentUser?.department || 'General'}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Team Members</span>
+                    <span className="font-medium">
+                      {employees.filter(e => e.department === currentUser?.department).length}
+                    </span>
+                  </div>
+                  <Button variant="outline" className="w-full border-black hover:bg-gray-50" onClick={() => navigate('/dashboard')}>
+                    View Team
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold">Team Directory</h2>
           <Button className="bg-purple-600 hover:bg-purple-700 text-white border border-black">
             NEW
           </Button>
