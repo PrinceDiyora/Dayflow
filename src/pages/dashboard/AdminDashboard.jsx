@@ -96,7 +96,7 @@ export function AdminDashboard() {
         {statCards.map((card) => {
           const Icon = card.icon
           return (
-            <Card key={card.title}>
+            <Card key={card.title} className="border-black shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
                 <div className={`p-2 rounded-lg ${card.bgColor}`}>
@@ -113,7 +113,7 @@ export function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="border-black shadow-sm">
           <CardHeader>
             <CardTitle>Employee List</CardTitle>
             <CardDescription>Recent employees</CardDescription>
@@ -142,32 +142,32 @@ export function AdminDashboard() {
               </TableBody>
             </Table>
             <div className="mt-4">
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" className="w-full border-black hover:bg-gray-50">
                 <Link to="/profile">View All Employees</Link>
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-black shadow-sm">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
             <CardDescription>Common tasks</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button asChild variant="outline" className="w-full justify-start">
+            <Button asChild variant="outline" className="w-full justify-start border-black hover:bg-gray-50">
               <Link to="/attendance">
                 <Clock className="mr-2 h-4 w-4" />
                 View Attendance
               </Link>
             </Button>
-            <Button asChild variant="outline" className="w-full justify-start">
+            <Button asChild variant="outline" className="w-full justify-start border-black hover:bg-gray-50">
               <Link to="/leaves">
                 <Calendar className="mr-2 h-4 w-4" />
                 Approve Leaves
               </Link>
             </Button>
-            <Button asChild variant="outline" className="w-full justify-start">
+            <Button asChild variant="outline" className="w-full justify-start border-black hover:bg-gray-50">
               <Link to="/payroll">
                 <TrendingUp className="mr-2 h-4 w-4" />
                 Manage Payroll
