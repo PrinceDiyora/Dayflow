@@ -17,6 +17,14 @@ import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import { TableSkeleton } from '@/components/common/loading-skeleton';
 import dayjs from 'dayjs';
 
+// Helper function to safely format hours
+const formatHours = (hours: number | string | null | undefined): string => {
+  if (hours == null) return '-';
+  const numHours = typeof hours === 'string' ? parseFloat(hours) : hours;
+  if (isNaN(numHours)) return '-';
+  return numHours.toFixed(2);
+};
+
 export function AttendancePage() {
   const { user } = authStore();
   const isAdmin = user?.role === 'admin' || user?.role === 'hr';
@@ -148,7 +156,7 @@ export function AttendancePage() {
                         <p className="text-2xl font-bold">{todayAttendance.checkOut}</p>
                         <p className="text-sm text-muted-foreground mt-4">Total hours</p>
                         <p className="text-xl font-semibold">
-                          {todayAttendance.totalHours?.toFixed(2)} hours
+                          {formatHours(todayAttendance.totalHours)} hours
                         </p>
                       </>
                     )}
@@ -213,7 +221,7 @@ export function AttendancePage() {
                     <TableCell>{dayjs(record.date).format('MMM DD, YYYY')}</TableCell>
                     <TableCell>{record.checkIn || '-'}</TableCell>
                     <TableCell>{record.checkOut || '-'}</TableCell>
-                    <TableCell>{record.totalHours?.toFixed(2) || '-'}</TableCell>
+                    <TableCell>{formatHours(record.totalHours)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {getStatusIcon(record.status)}
